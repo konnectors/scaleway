@@ -3,8 +3,6 @@ node_js:
 - '8'
 env:
   global:
-  - GH_USER_EMAIL="travis@example.org"
-  - GH_USER_NAME="cozy-bot"
   - DEPLOY_REPOSITORY="git@github.com:konnectors/scaleway.git"
   - secure: Mr2f8i2opFhHZaiHVb85r013ea5terAmNNweC2OJSQrn1t/z/SGxqmeZWdjTw/dW/leTOjpel7tmVIE04rEP4cMLGRU+/eQchx0tJuSKiefO70ReqmxfgZ5nCdSU7stPxTeedoI3v7kghO8vuKgbBFRi96dgxbCIs43iDfZ8JWL7t7MELqvsDglgpNDy3iZvyX8oZgqEtUf2bSjEqsx83gYwlAdewA4CF5OEO7pexEBMBasRXeUBqmqX2JA6dLp9dXI4wzrIN9hqXQ6fjEqmY1j1NX6bsBzRbTX8LApNhnSC7Wjf8Ap3r26Aj+rlioXgxOXVYY0jZjAjtpHdsVHgs72zmSo6h7XyH0BCr/m0R6ySBUTmFqgZN/CuEJl/T3GRIlEKwkfpjmLcdmF0WgAEVOGNI/eIc6BTnxxrPSU/f5iErOHa5u6XSDsDMmEMpJg/p4oANJgb9VpynFuL9Aafcjh9+ZoCRI5H/r+3oLLP6s16FOoSdnW2YM5uZWHomVwvUV9gdx7LXxJxmlHi76jocamtB9zhaNEQhgPiDUg+ysSQG/WlaL1d/PpW7GOYtqWixFsH8YeSSYZMCzyHj5mPPBbcNlb6hUHOa04gdZEe4l9fUWDAJS8Q/x4NDiWXYtZYDjvgHjT/CfiGg0P++NWOmGKUhox8N3noaTjXDKJhkwM=
 cache:

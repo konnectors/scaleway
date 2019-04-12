@@ -34,7 +34,7 @@ async function start(fields) {
       }
     })
     log('info', 'Parsing list of documents')
-    const documents = invoices.map(
+    const documents = invoices.filter(invoice => invoice.state === "paid").map(
       ({
         organization_id,
         start_date,

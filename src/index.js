@@ -34,24 +34,26 @@ async function start(fields) {
       }
     })
     log('info', 'Parsing list of documents')
-    const documents = invoices.filter(invoice => invoice.state === "paid").map(
-      ({
-        organization_id,
-        start_date,
-        id,
-        total_undiscounted: amount,
-        currency
-      }) => ({
-        fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf&x-auth-token=${token}`,
-        filename: `${moment(new Date(start_date)).format(
-          'YYYY-MM-DD'
-        )}_${amount}_${currency}.pdf`,
-        vendor: 'scaleway',
-        date: new Date(start_date),
-        amount: parseFloat(amount),
-        currency: currency
-      })
-    )
+    const documents = invoices
+      .filter(invoice => invoice.state === 'paid')
+      .map(
+        ({
+          organization_id,
+          start_date,
+          id,
+          total_undiscounted: amount,
+          currency
+        }) => ({
+          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf&x-auth-token=${token}`,
+          filename: `${moment(new Date(start_date)).format(
+            'YYYY-MM-DD'
+          )}_${amount}_${currency}.pdf`,
+          vendor: 'scaleway',
+          date: new Date(start_date),
+          amount: parseFloat(amount),
+          currency: currency
+        })
+      )
 
     // here we use the saveBills function even if what we fetch are not bills, but this is the most
     // common case in connectors

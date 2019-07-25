@@ -3,7 +3,7 @@
   "name": "Scaleway",
   "type": "konnector",
   "language": "node",
-  "icon": "scaleway.png",
+  "icon": "icon.svg",
   "slug": "scaleway",
   "source": "git@github.com:konnectors/scaleway.git",
   "editor": "Cozy",

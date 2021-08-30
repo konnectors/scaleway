@@ -9,20 +9,31 @@ const {
   log,
   errors
 } = require('cozy-konnector-libs')
-const moment = require('moment')
-moment.locale('fr')
+
+const dayjs = require('dayjs')
+dayjs.locale('fr')
+
 const request = requestFactory({
   cheerio: false,
   json: true
 })
 
-const baseUrl = 'https://billing.scaleway.com/invoices?page=1&per_page=12'
+const baseUrl = 'https://billing.scaleway.com/invoices'
+
+const currencySymbols = {
+  EUR: '€',
+  USD: '$'
+}
 
 module.exports = new BaseKonnector(start)
 
 async function start(fields) {
   log('info', 'Authenticating ...')
-  const token = await authenticate(fields.login, fields.password)
+  const token = await authenticate(
+    fields.login,
+    fields.password,
+    fields.twoFACode
+  )
   log('info', 'Successfully logged in, token created')
   try {
     log('info', 'Fetching the list of documents')
@@ -41,13 +52,13 @@ async function start(fields) {
           organization_id,
           start_date,
           id,
-          total_undiscounted: amount,
+          total_taxed: amount,
           currency
         }) => ({
           fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf&x-auth-token=${token}`,
-          filename: `${moment(new Date(start_date)).format(
+          filename: `${dayjs(new Date(start_date)).format(
             'YYYY-MM-DD'
-          )}_${amount}_${currency}.pdf`,
+          )}_${amount}${currencySymbols[currency] || '_' + currency}.pdf`,
           vendor: 'scaleway',
           date: new Date(start_date),
           amount: parseFloat(amount),
@@ -80,17 +91,23 @@ async function clearToken(token) {
   log('info', `token deleted: ${JSON.stringify(response)}`)
 }
 
-async function authenticate(email, password) {
+async function authenticate(email, password, twoFACode = null) {
+  let requestBody = {
+    email: email,
+    password: password
+  }
+
+  if (twoFACode !== null) {
+    requestBody['2FA_token'] = twoFACode
+  }
+
   try {
     const {
       token: { id }
     } = await request({
       method: 'POST',
       uri: 'https://account.scaleway.com/tokens',
-      body: {
-        email,
-        password
-      }
+      body: requestBody
     })
     return id
   } catch (err) {

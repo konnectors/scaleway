@@ -44,7 +44,12 @@ async function start(fields) {
           total_undiscounted: amount,
           currency
         }) => ({
-          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf&x-auth-token=${token}`,
+          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf`,
+          requestOptions: {
+            headers: {
+              'X-Auth-Token': token
+            }
+          },
           filename: `${moment(new Date(start_date)).format(
             'YYYY-MM-DD'
           )}_${amount}_${currency}.pdf`,

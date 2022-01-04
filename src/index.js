@@ -41,7 +41,7 @@ async function start(fields) {
           organization_id,
           start_date,
           id,
-          total_undiscounted: amount,
+          total_taxed: amount,
           currency
         }) => ({
           fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf`,

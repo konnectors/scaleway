@@ -83,7 +83,7 @@ async function clearToken(token) {
 async function authenticate(email, password) {
   try {
     const {
-      token: { id }
+      token: { secret_key }
     } = await request({
       method: 'POST',
       uri: 'https://account.scaleway.com/tokens',
@@ -92,7 +92,7 @@ async function authenticate(email, password) {
         password
       }
     })
-    return id
+    return secret_key
   } catch (err) {
     log('error', err.message)
     throw errors.LOGIN_FAILED

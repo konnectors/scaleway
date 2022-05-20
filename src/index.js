@@ -1,13 +1,15 @@
 process.env.SENTRY_DNS =
   process.env.SENTRY_DNS ||
-  'https://1c8be841977f40f992a22e4f26a225e4:e91462663958491d9540f2ffaa60dcd4@sentry.cozycloud.cc/52'
+  'https://f5e851d01e0f4ce3b19a13246b2af7cb@errors.cozycloud.cc/43'
 
 const {
   BaseKonnector,
   requestFactory,
   saveBills,
   log,
-  errors
+  errors,
+  solveCaptcha,
+  cozyClient
 } = require('cozy-konnector-libs')
 const moment = require('moment')
 moment.locale('fr')
@@ -16,21 +18,37 @@ const request = requestFactory({
   json: true
 })
 
+const models = cozyClient.new.models
+const { Qualification } = models.document
+
 const baseUrl = 'https://billing.scaleway.com/invoices?page=1&per_page=12'
+const userAgent =
+  'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'
 
 module.exports = new BaseKonnector(start)
 
 async function start(fields) {
   log('info', 'Authenticating ...')
-  const token = await authenticate(fields.login, fields.password)
+  const jwtResponse = await authenticate(fields.login, fields.password)
+  const token = jwtResponse.auth.jwt_key
   log('info', 'Successfully logged in, token created')
   try {
     log('info', 'Fetching the list of documents')
     log('info', `With the token ${token.slice(0, 9)}...`)
-    const { invoices } = await request({
-      uri: baseUrl,
+    const userInfos = await request({
+      uri: `https://api.scaleway.com/account/v1/users/${jwtResponse.jwt.issuer}`,
       headers: {
-        'X-Auth-Token': token
+        'X-Session-Token': token,
+        'User-Agent': userAgent
+      }
+    })
+
+    const organizationId = userInfos.user.organizations[0].id
+    const { invoices } = await request({
+      uri: `${baseUrl}&organization_id=${organizationId}`,
+      headers: {
+        'X-Session-Token': token,
+        'User-Agent': userAgent
       }
     })
     log('info', 'Parsing list of documents')
@@ -47,7 +65,8 @@ async function start(fields) {
           fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf`,
           requestOptions: {
             headers: {
-              'X-Auth-Token': token
+              'X-Session-Token': token,
+              'User-Agent': userAgent
             }
           },
           filename: `${moment(new Date(start_date)).format(
@@ -56,7 +75,17 @@ async function start(fields) {
           vendor: 'scaleway',
           date: new Date(start_date),
           amount: parseFloat(amount),
-          currency: currency
+          currency: currency,
+          fileAttributes: {
+            metadata: {
+              contentAuthor: 'scaleway.com',
+              issueDate: new Date(),
+              datetime: new Date(start_date),
+              datetimeLabel: `issueDate`,
+              carbonCopy: true,
+              qualification: Qualification.getByLabel('web_service_invoice')
+            }
+          }
         })
       )
 
@@ -67,7 +96,11 @@ async function start(fields) {
       // this is a bank identifier which will be used to link bills to bank operations. These
       // identifiers should be at least a word found in the title of a bank operation related to this
       // bill. It is not case sensitive.
-      identifiers: ['scaleway']
+      identifiers: ['scaleway.com'],
+      fileIdAttribute: ['filename'],
+      sourceAccount: fields.login,
+      sourceAccountIdentifier: fields.login,
+      contentType: 'application/pdf'
     })
   } finally {
     clearToken(token)
@@ -79,27 +112,55 @@ async function clearToken(token) {
     method: 'DELETE',
     uri: `https://account.scaleway.com/tokens/${token}`,
     headers: {
-      'X-Auth-Token': token
+      'X-Session-Token': token,
+      'User-Agent': userAgent
     }
   })
   log('info', `token deleted: ${JSON.stringify(response)}`)
 }
 
 async function authenticate(email, password) {
+  log('debug', 'get in authenticate')
   try {
-    const {
-      token: { secret_key }
-    } = await request({
+    const jwtResponse = await request({
       method: 'POST',
-      uri: 'https://account.scaleway.com/tokens',
+      uri: 'https://api.scaleway.com/account/v1/jwt',
       body: {
         email,
-        password
+        password,
+        renewable: false
+      },
+      headers: {
+        'User-Agent': userAgent
       }
     })
-    return secret_key
+    return jwtResponse
   } catch (err) {
-    log('error', err.message)
-    throw errors.LOGIN_FAILED
+    if (
+      err.message ===
+      '401 - {"type":"captcha_required","message":"Missing Captcha"}'
+    ) {
+      const gRecaptcha = await solveCaptcha({
+        websiteKey: '6LfvYbQUAAAAACK597rFdAMTYinNYOf_zbiuvMWA',
+        websiteURL: 'https://console.scaleway.com/login-password'
+      })
+      const jwtResponse = await request({
+        method: 'POST',
+        uri: 'https://api.scaleway.com/account/v1/jwt',
+        body: {
+          captcha: gRecaptcha,
+          email,
+          password,
+          renewable: false
+        },
+        headers: {
+          'User-Agent': userAgent
+        }
+      })
+      return jwtResponse
+    } else {
+      log('error', err.message)
+      throw errors.LOGIN_FAILED
+    }
   }
 }

@@ -103,7 +103,8 @@ async function start(fields) {
       contentType: 'application/pdf'
     })
   } finally {
-    clearToken(token)
+    // clearToken(token)
+    // Disable made a 404 around 17-08-22, maybe node16
   }
 }
 

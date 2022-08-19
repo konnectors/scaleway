@@ -31,6 +31,7 @@ async function start(fields) {
   log('info', 'Authenticating ...')
   const jwtResponse = await authenticate(fields.login, fields.password)
   const token = jwtResponse.auth.jwt_key
+  const id_jti = jwtResponse.jwt.jti
   log('info', 'Successfully logged in, token created')
   try {
     log('info', 'Fetching the list of documents')
@@ -103,17 +104,16 @@ async function start(fields) {
       contentType: 'application/pdf'
     })
   } finally {
-    // clearToken(token)
-    // Disable made a 404 around 17-08-22, maybe node16
+    await clearToken(token, id_jti)
   }
 }
 
-async function clearToken(token) {
+async function clearToken(token, id_jti) {
   const response = await request({
     method: 'DELETE',
-    uri: `https://account.scaleway.com/tokens/${token}`,
+    uri: `https://api.scaleway.com/account/v1/jwt/${id_jti}`,
     headers: {
-      'X-Session-Token': token,
+      'x-session-token': token,
       'User-Agent': userAgent
     }
   })

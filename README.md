@@ -18,7 +18,7 @@ This konnector retrieves your invoices from https://www.scaleway.com/
 If you want to work on this konnector and submit code modifications, feel free to open pull-requests!
 </br>See :
 * the [contributing guide][contribute] for more information about how to properly open pull-requests.
-* the [konnectors development guide](https://docs.cozy.io/en/dev/konnector/)
+* the [konnectors development guide](https://docs.cozy.io/en/tutorials/konnector/)
 
 ### Run and test
 
@@ -36,7 +36,7 @@ Then :
 yarn
 yarn standalone
 ```
-For running the konnector connected to a Cozy server and more details see [konnectors documentation](https://docs.cozy.io/en/dev/konnector/)
+For running the konnector connected to a Cozy server and more details see [konnectors documentation](https://docs.cozy.io/en/tutorials/konnector/)
 
 ### Cozy-konnector-libs
 

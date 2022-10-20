@@ -11,8 +11,10 @@ const {
   solveCaptcha,
   cozyClient
 } = require('cozy-konnector-libs')
-const moment = require('moment')
-moment.locale('fr')
+
+const dayjs = require('dayjs')
+dayjs.locale('fr')
+
 const request = requestFactory({
   cheerio: false,
   json: true
@@ -20,10 +22,14 @@ const request = requestFactory({
 
 const models = cozyClient.new.models
 const { Qualification } = models.document
-
-const baseUrl = 'https://billing.scaleway.com/invoices?page=1&per_page=12'
 const userAgent =
   'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'
+const baseUrl = 'https://billing.scaleway.com/invoices'
+
+const currencySymbols = {
+  EUR: '€',
+  USD: '$'
+}
 
 module.exports = new BaseKonnector(start)
 
@@ -63,16 +69,16 @@ async function start(fields) {
           total_taxed: amount,
           currency
         }) => ({
-          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf`,
           requestOptions: {
             headers: {
               'X-Session-Token': token,
               'User-Agent': userAgent
             }
           },
-          filename: `${moment(new Date(start_date)).format(
+          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf&x-auth-token=${token}`,
+          filename: `${dayjs(new Date(start_date)).format(
             'YYYY-MM-DD'
-          )}_${amount}_${currency}.pdf`,
+          )}_${amount}${currencySymbols[currency] || '_' + currency}.pdf`,
           vendor: 'scaleway',
           date: new Date(start_date),
           amount: parseFloat(amount),
@@ -120,20 +126,21 @@ async function clearToken(token, id_jti) {
   log('info', `token deleted: ${JSON.stringify(response)}`)
 }
 
-async function authenticate(email, password) {
-  log('debug', 'get in authenticate')
+async function authenticate(email, password, twoFACode = null) {
+  let requestBody = {
+    email: email,
+    password: password
+  }
+
+  if (twoFACode !== null) {
+    requestBody['2FA_token'] = twoFACode
+  }
+
   try {
     const jwtResponse = await request({
       method: 'POST',
-      uri: 'https://api.scaleway.com/account/v1/jwt',
-      body: {
-        email,
-        password,
-        renewable: false
-      },
-      headers: {
-        'User-Agent': userAgent
-      }
+      uri: 'https://account.scaleway.com/tokens',
+      body: requestBody
     })
     return jwtResponse
   } catch (err) {

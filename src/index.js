@@ -17,14 +17,15 @@ dayjs.locale('fr')
 
 const request = requestFactory({
   cheerio: false,
-  json: true
+  json: true,
+  debug: true
 })
 
 const models = cozyClient.new.models
 const { Qualification } = models.document
 const userAgent =
   'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'
-const baseUrl = 'https://billing.scaleway.com/invoices'
+const baseUrl = 'https://api.scaleway.com/billing/v1/invoices'
 
 const currencySymbols = {
   EUR: '€',
@@ -35,7 +36,11 @@ module.exports = new BaseKonnector(start)
 
 async function start(fields) {
   log('info', 'Authenticating ...')
-  const jwtResponse = await authenticate(fields.login, fields.password)
+  const jwtResponse = await authenticate(
+    fields.login,
+    fields.password,
+    fields.twoFACode
+  )
   const token = jwtResponse.auth.jwt_key
   const id_jti = jwtResponse.jwt.jti
   log('info', 'Successfully logged in, token created')
@@ -52,7 +57,7 @@ async function start(fields) {
 
     const organizationId = userInfos.user.organizations[0].id
     const { invoices } = await request({
-      uri: `${baseUrl}&organization_id=${organizationId}`,
+      uri: `${baseUrl}?organization_id=${organizationId}`,
       headers: {
         'X-Session-Token': token,
         'User-Agent': userAgent
@@ -139,7 +144,11 @@ async function authenticate(email, password, twoFACode = null) {
   try {
     const jwtResponse = await request({
       method: 'POST',
-      uri: 'https://account.scaleway.com/tokens',
+      uri: 'https://api.scaleway.com/account/v1/jwt',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0'
+      },
       body: requestBody
     })
     return jwtResponse

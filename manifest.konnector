@@ -18,10 +18,6 @@
     "password": {
       "type": "password"
     },
-    "twoFACode": {
-      "type": "text",
-      "isRequired": false
-    },
     "advancedFields": {
       "folderPath": {
         "advanced": true,

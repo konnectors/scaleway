@@ -76,11 +76,6 @@
         "accounts": {
           "description": "Utilisé pour obtenir les données du compte"
         }
-      },
-      "fields": {
-        "twoFACode": {
-          "label" : "Code 2FA (optionnel)"
-        }
       }
     },
     "en": {
@@ -101,11 +96,6 @@
         },
         "accounts": {
           "description": "Required to get the account's data"
-        }
-      },
-      "fields": {
-        "twoFACode": {
-          "label" : "2FA code (optional)"
         }
       }
     }

@@ -3585,7 +3585,6 @@ functional-red-black-tree@^1.0.1:
 
 "geco@git+https://github.com/konnectors/geco.git#0.11.2":
   version "0.11.2"
-  uid fe0da3cdaabd5714a226014efd61c89bc85e7c56
   resolved "git+https://github.com/konnectors/geco.git#fe0da3cdaabd5714a226014efd61c89bc85e7c56"
   dependencies:
     toni "git+https://github.com/konnectors/toni.git#0.6.3"
@@ -4525,11 +4524,6 @@ mkdirp@^1.0.3:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
-
-moment@2.29.4:
-  version "2.29.4"
-  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.4.tgz#3dbe052889fe7c1b2ed966fcb3a77328964ef108"
-  integrity sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==
 
 morgan@^1.9.1:
   version "1.10.0"
@@ -6017,7 +6011,6 @@ token-types@^4.1.1:
 
 "toni@git+https://github.com/konnectors/toni.git#0.6.3":
   version "0.6.3"
-  uid eb813c9d070b494efd78f788cf627bfc9a1019ec
   resolved "git+https://github.com/konnectors/toni.git#eb813c9d070b494efd78f788cf627bfc9a1019ec"
   dependencies:
     bolgia ">=2.7.4"

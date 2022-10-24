@@ -17,8 +17,7 @@ dayjs.locale('fr')
 
 const request = requestFactory({
   cheerio: false,
-  json: true,
-  debug: true
+  json: true
 })
 
 const models = cozyClient.new.models
@@ -36,7 +35,7 @@ module.exports = new BaseKonnector(start)
 
 async function start(fields) {
   log('info', 'Authenticating ...')
-  const jwtResponse = await authenticate(
+  const jwtResponse = await authenticate.bind(this)(
     fields.login,
     fields.password,
     fields.twoFACode
@@ -131,45 +130,44 @@ async function clearToken(token, id_jti) {
   log('info', `token deleted: ${JSON.stringify(response)}`)
 }
 
-async function authenticate(email, password, twoFACode = null) {
+async function authenticate(email, password) {
+  log('debug', `authenticate`)
   let requestBody = {
     email: email,
     password: password
   }
 
-  if (twoFACode !== null) {
-    requestBody['2FA_token'] = twoFACode
-  }
-
   try {
+    const gRecaptcha = await solveCaptcha({
+      websiteKey: '6LfvYbQUAAAAACK597rFdAMTYinNYOf_zbiuvMWA',
+      websiteURL: 'https://console.scaleway.com/login-password'
+    })
+    requestBody['captcha'] = gRecaptcha
+
     const jwtResponse = await request({
       method: 'POST',
       uri: 'https://api.scaleway.com/account/v1/jwt',
+      body: requestBody,
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0'
-      },
-      body: requestBody
+        'User-Agent': userAgent
+      }
     })
     return jwtResponse
   } catch (err) {
     if (
-      err.message ===
-      '401 - {"type":"captcha_required","message":"Missing Captcha"}'
+      err.message.includes(
+        '403 - {"type":"2FA_error","message":"Two-Factor authentication error"'
+      )
     ) {
-      const gRecaptcha = await solveCaptcha({
-        websiteKey: '6LfvYbQUAAAAACK597rFdAMTYinNYOf_zbiuvMWA',
-        websiteURL: 'https://console.scaleway.com/login-password'
+      log('info', 'getting in 2fa condition')
+      const code = await this.waitForTwoFaCode({
+        type: 'email'
       })
+      requestBody['2FA_token'] = code
       const jwtResponse = await request({
         method: 'POST',
         uri: 'https://api.scaleway.com/account/v1/jwt',
-        body: {
-          captcha: gRecaptcha,
-          email,
-          password,
-          renewable: false
-        },
+        body: requestBody,
         headers: {
           'User-Agent': userAgent
         }

@@ -11,8 +11,10 @@ const {
   solveCaptcha,
   cozyClient
 } = require('cozy-konnector-libs')
-const moment = require('moment')
-moment.locale('fr')
+
+const dayjs = require('dayjs')
+dayjs.locale('fr')
+
 const request = requestFactory({
   cheerio: false,
   json: true
@@ -20,16 +22,24 @@ const request = requestFactory({
 
 const models = cozyClient.new.models
 const { Qualification } = models.document
-
-const baseUrl = 'https://billing.scaleway.com/invoices?page=1&per_page=12'
 const userAgent =
   'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'
+const baseUrl = 'https://api.scaleway.com/billing/v1/invoices'
+
+const currencySymbols = {
+  EUR: '€',
+  USD: '$'
+}
 
 module.exports = new BaseKonnector(start)
 
 async function start(fields) {
   log('info', 'Authenticating ...')
-  const jwtResponse = await authenticate(fields.login, fields.password)
+  const jwtResponse = await authenticate.bind(this)(
+    fields.login,
+    fields.password,
+    fields.twoFACode
+  )
   const token = jwtResponse.auth.jwt_key
   const id_jti = jwtResponse.jwt.jti
   log('info', 'Successfully logged in, token created')
@@ -46,7 +56,7 @@ async function start(fields) {
 
     const organizationId = userInfos.user.organizations[0].id
     const { invoices } = await request({
-      uri: `${baseUrl}&organization_id=${organizationId}`,
+      uri: `${baseUrl}?organization_id=${organizationId}`,
       headers: {
         'X-Session-Token': token,
         'User-Agent': userAgent
@@ -63,16 +73,16 @@ async function start(fields) {
           total_taxed: amount,
           currency
         }) => ({
-          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf`,
           requestOptions: {
             headers: {
               'X-Session-Token': token,
               'User-Agent': userAgent
             }
           },
-          filename: `${moment(new Date(start_date)).format(
+          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf&x-auth-token=${token}`,
+          filename: `${dayjs(new Date(start_date)).format(
             'YYYY-MM-DD'
-          )}_${amount}_${currency}.pdf`,
+          )}_${amount}${currencySymbols[currency] || '_' + currency}.pdf`,
           vendor: 'scaleway',
           date: new Date(start_date),
           amount: parseFloat(amount),
@@ -121,16 +131,23 @@ async function clearToken(token, id_jti) {
 }
 
 async function authenticate(email, password) {
-  log('debug', 'get in authenticate')
+  log('debug', `authenticate`)
+  let requestBody = {
+    email: email,
+    password: password
+  }
+
   try {
+    const gRecaptcha = await solveCaptcha({
+      websiteKey: '6LfvYbQUAAAAACK597rFdAMTYinNYOf_zbiuvMWA',
+      websiteURL: 'https://console.scaleway.com/login-password'
+    })
+    requestBody['captcha'] = gRecaptcha
+
     const jwtResponse = await request({
       method: 'POST',
       uri: 'https://api.scaleway.com/account/v1/jwt',
-      body: {
-        email,
-        password,
-        renewable: false
-      },
+      body: requestBody,
       headers: {
         'User-Agent': userAgent
       }
@@ -138,22 +155,19 @@ async function authenticate(email, password) {
     return jwtResponse
   } catch (err) {
     if (
-      err.message ===
-      '401 - {"type":"captcha_required","message":"Missing Captcha"}'
+      err.message.includes(
+        '403 - {"type":"2FA_error","message":"Two-Factor authentication error"'
+      )
     ) {
-      const gRecaptcha = await solveCaptcha({
-        websiteKey: '6LfvYbQUAAAAACK597rFdAMTYinNYOf_zbiuvMWA',
-        websiteURL: 'https://console.scaleway.com/login-password'
+      log('info', 'getting in 2fa condition')
+      const code = await this.waitForTwoFaCode({
+        type: 'email'
       })
+      requestBody['2FA_token'] = code
       const jwtResponse = await request({
         method: 'POST',
         uri: 'https://api.scaleway.com/account/v1/jwt',
-        body: {
-          captcha: gRecaptcha,
-          email,
-          password,
-          renewable: false
-        },
+        body: requestBody,
         headers: {
           'User-Agent': userAgent
         }

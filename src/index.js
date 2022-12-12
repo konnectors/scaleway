@@ -161,7 +161,7 @@ async function authenticate(email, password) {
     ) {
       log('info', 'getting in 2fa condition')
       const code = await this.waitForTwoFaCode({
-        type: 'email'
+        type: 'app_code'
       })
       requestBody['2FA_token'] = code
       const jwtResponse = await request({

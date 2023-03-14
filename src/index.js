@@ -108,7 +108,7 @@ async function start(fields) {
       // identifiers should be at least a word found in the title of a bank operation related to this
       // bill. It is not case sensitive.
       identifiers: ['scaleway.com'],
-      fileIdAttribute: ['filename'],
+      fileIdAttributes: ['filename'],
       sourceAccount: fields.login,
       sourceAccountIdentifier: fields.login,
       contentType: 'application/pdf'

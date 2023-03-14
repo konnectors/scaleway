@@ -121,7 +121,7 @@ async function start(fields) {
 async function clearToken(token, id_jti) {
   const response = await request({
     method: 'DELETE',
-    uri: `https://api.scaleway.com/account/v1/jwt/${id_jti}`,
+    uri: `https://api.scaleway.com/iam/v1alpha1/jwts/${id_jti}`,
     headers: {
       'x-session-token': token,
       'User-Agent': userAgent
@@ -143,7 +143,6 @@ async function authenticate(email, password) {
       websiteURL: 'https://console.scaleway.com/login-password'
     })
     requestBody['captcha'] = gRecaptcha
-
     const jwtResponse = await request({
       method: 'POST',
       uri: 'https://api.scaleway.com/account/v1/jwt',

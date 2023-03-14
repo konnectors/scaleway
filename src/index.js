@@ -119,15 +119,19 @@ async function start(fields) {
 }
 
 async function clearToken(token, id_jti) {
-  const response = await request({
-    method: 'DELETE',
-    uri: `https://api.scaleway.com/iam/v1alpha1/jwts/${id_jti}`,
-    headers: {
-      'x-session-token': token,
-      'User-Agent': userAgent
-    }
-  })
-  log('info', `token deleted: ${JSON.stringify(response)}`)
+  try {
+    const response = await request({
+      method: 'DELETE',
+      uri: `https://api.scaleway.com/iam/v1alpha1/jwts/${id_jti}`,
+      headers: {
+        'x-session-token': token,
+        'User-Agent': userAgent
+      }
+    })
+    log('info', `token deleted: ${JSON.stringify(response)}`)
+  } catch (err) {
+    log('warn', `Cannot delete token properly : ${err}`)
+  }
 }
 
 async function authenticate(email, password) {

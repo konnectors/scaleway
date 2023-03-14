@@ -108,7 +108,7 @@ async function start(fields) {
       // identifiers should be at least a word found in the title of a bank operation related to this
       // bill. It is not case sensitive.
       identifiers: ['scaleway.com'],
-      fileIdAttribute: ['filename'],
+      fileIdAttributes: ['filename'],
       sourceAccount: fields.login,
       sourceAccountIdentifier: fields.login,
       contentType: 'application/pdf'
@@ -119,15 +119,19 @@ async function start(fields) {
 }
 
 async function clearToken(token, id_jti) {
-  const response = await request({
-    method: 'DELETE',
-    uri: `https://api.scaleway.com/account/v1/jwt/${id_jti}`,
-    headers: {
-      'x-session-token': token,
-      'User-Agent': userAgent
-    }
-  })
-  log('info', `token deleted: ${JSON.stringify(response)}`)
+  try {
+    const response = await request({
+      method: 'DELETE',
+      uri: `https://api.scaleway.com/iam/v1alpha1/jwts/${id_jti}`,
+      headers: {
+        'x-session-token': token,
+        'User-Agent': userAgent
+      }
+    })
+    log('info', `token deleted: ${JSON.stringify(response)}`)
+  } catch (err) {
+    log('warn', `Cannot delete token properly : ${err}`)
+  }
 }
 
 async function authenticate(email, password) {
@@ -143,7 +147,6 @@ async function authenticate(email, password) {
       websiteURL: 'https://console.scaleway.com/login-password'
     })
     requestBody['captcha'] = gRecaptcha
-
     const jwtResponse = await request({
       method: 'POST',
       uri: 'https://api.scaleway.com/account/v1/jwt',

@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "cozy-konnector-libs": "4.56.4",
-    "dayjs": "^1.10.6"
+    "dayjs": "1.10.6"
   },
   "devDependencies": {
     "cozy-jobs-cli": "1.20.2",

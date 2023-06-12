@@ -47,14 +47,14 @@ async function start(fields) {
     log('info', 'Fetching the list of documents')
     log('info', `With the token ${token.slice(0, 9)}...`)
     const userInfos = await request({
-      uri: `https://api.scaleway.com/account/v1/users/${jwtResponse.jwt.issuer}`,
+      uri: `https://api.scaleway.com/account/v2/users/${jwtResponse.jwt.issuer}`,
       headers: {
         'X-Session-Token': token,
         'User-Agent': userAgent
       }
     })
 
-    const organizationId = userInfos.user.organizations[0].id
+    const organizationId = userInfos.organizations[0].id
     const { invoices } = await request({
       uri: `${baseUrl}?organization_id=${organizationId}`,
       headers: {

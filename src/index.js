@@ -47,14 +47,14 @@ async function start(fields) {
     log('info', 'Fetching the list of documents')
     log('info', `With the token ${token.slice(0, 9)}...`)
     const userInfos = await request({
-      uri: `https://api.scaleway.com/account/v1/users/${jwtResponse.jwt.issuer}`,
+      uri: `https://api.scaleway.com/account/v2/users/${jwtResponse.jwt.issuer}`,
       headers: {
         'X-Session-Token': token,
         'User-Agent': userAgent
       }
     })
 
-    const organizationId = userInfos.user.organizations[0].id
+    const organizationId = userInfos.organizations[0].id
     const { invoices } = await request({
       uri: `${baseUrl}?organization_id=${organizationId}`,
       headers: {
@@ -79,7 +79,7 @@ async function start(fields) {
               'User-Agent': userAgent
             }
           },
-          fileurl: `https://billing.scaleway.com/invoices/${organization_id}/${start_date}/${id}?format=pdf&x-auth-token=${token}`,
+          fileurl: `https://api.scaleway.com/billing/v1/invoices/${organization_id}/${start_date}/${id}?format=pdf`,
           filename: `${dayjs(new Date(start_date)).format(
             'YYYY-MM-DD'
           )}_${amount}${currencySymbols[currency] || '_' + currency}.pdf`,
@@ -114,6 +114,7 @@ async function start(fields) {
       contentType: 'application/pdf'
     })
   } finally {
+    // this request returned undefind, maybe not working
     await clearToken(token, id_jti)
   }
 }
@@ -140,7 +141,6 @@ async function authenticate(email, password) {
     email: email,
     password: password
   }
-
   try {
     const gRecaptcha = await solveCaptcha({
       websiteKey: '6LfvYbQUAAAAACK597rFdAMTYinNYOf_zbiuvMWA',
@@ -176,6 +176,12 @@ async function authenticate(email, password) {
         }
       })
       return jwtResponse
+    } else if (
+      err.message.includes('required passwordless auth for unknown ip')
+    ) {
+      log('warn', 'passwordless link need detected, erroring for now')
+      log('error', err.message)
+      throw errors.LOGIN_FAILED.MAGICLINK_NOT_IMPLEMENTED
     } else {
       log('error', err.message)
       throw errors.LOGIN_FAILED

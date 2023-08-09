@@ -8,7 +8,7 @@ const {
   saveBills,
   log,
   errors,
-  solveCaptcha,
+  // solveCaptcha,
   cozyClient
 } = require('cozy-konnector-libs')
 
@@ -35,26 +35,29 @@ module.exports = new BaseKonnector(start)
 
 async function start(fields) {
   log('info', 'Authenticating ...')
-  const jwtResponse = await authenticate.bind(this)(
+  const loginResponse = await authenticate.bind(this)(
     fields.login,
     fields.password,
     fields.twoFACode
   )
-  const token = jwtResponse.auth.jwt_key
-  const id_jti = jwtResponse.jwt.jti
+  // Token seems valid during 1 hour
+  const token = loginResponse.token
+  const id_jti = loginResponse.jwt.jti // for token deletion
+  const issuer = loginResponse.jwt.issuer_id
   log('info', 'Successfully logged in, token created')
   try {
-    log('info', 'Fetching the list of documents')
-    log('info', `With the token ${token.slice(0, 9)}...`)
-    const userInfos = await request({
-      uri: `https://api.scaleway.com/account/v2/users/${jwtResponse.jwt.issuer}`,
+    log('info', 'Fetching organization id')
+    log('debug', `With the token ${token.slice(0, 9)}...`)
+    const v1Infos = await request({
+      uri: `https://api.scaleway.com/iam/v1alpha1/users/${issuer}`,
       headers: {
         'X-Session-Token': token,
         'User-Agent': userAgent
       }
     })
+    const organizationId = v1Infos.organization_id
 
-    const organizationId = userInfos.organizations[0].id
+    log('info', 'Fetching the list of documents')
     const { invoices } = await request({
       uri: `${baseUrl}?organization_id=${organizationId}`,
       headers: {
@@ -142,20 +145,23 @@ async function authenticate(email, password) {
     password: password
   }
   try {
+    // Seems not needed anymore via api v2
+    /*
     const gRecaptcha = await solveCaptcha({
       websiteKey: '6LfvYbQUAAAAACK597rFdAMTYinNYOf_zbiuvMWA',
       websiteURL: 'https://console.scaleway.com/login-password'
     })
     requestBody['captcha'] = gRecaptcha
-    const jwtResponse = await request({
+    */
+    const loginResponse = await request({
       method: 'POST',
-      uri: 'https://api.scaleway.com/account/v1/jwt',
+      uri: 'https://api.scaleway.com/account/v2/login',
       body: requestBody,
       headers: {
         'User-Agent': userAgent
       }
     })
-    return jwtResponse
+    return loginResponse
   } catch (err) {
     if (
       err.message.includes(
@@ -169,7 +175,7 @@ async function authenticate(email, password) {
       requestBody['2FA_token'] = code
       const jwtResponse = await request({
         method: 'POST',
-        uri: 'https://api.scaleway.com/account/v1/jwt',
+        uri: 'https://api.scaleway.com/account/v2/login/jwt',
         body: requestBody,
         headers: {
           'User-Agent': userAgent

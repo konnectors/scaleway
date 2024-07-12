@@ -1,5 +1,5 @@
 {
-  "version": "1.12.0",
+  "version": "1.13.0",
   "name": "Scaleway",
   "type": "konnector",
   "language": "node",
@@ -9,7 +9,7 @@
   "editor": "Cozy",
   "vendor_link": "https://www.scaleway.com/",
   "categories": [
-    "online_services"
+    "tech"
   ],
   "fields": {
     "login": {
